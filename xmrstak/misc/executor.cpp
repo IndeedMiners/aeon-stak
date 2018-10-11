@@ -422,7 +422,7 @@ void executor::on_miner_result(size_t pool_id, job_result& oResult)
 		//Ignore errors silently
 		if(pool->is_running() && pool->is_logged_in())
 			pool->cmd_submit(oResult.sJobID, oResult.iNonce, oResult.bResult, backend_name,
-			backend_hashcount, total_hashcount, jconf::inst()->GetCurrentCoinSelection().GetDescription(0).GetMiningAlgo()
+			backend_hashcount, total_hashcount, oResult.algorithm
 		);
 		return;
 	}
@@ -435,7 +435,7 @@ void executor::on_miner_result(size_t pool_id, job_result& oResult)
 
 	size_t t_start = get_timestamp_ms();
 	bool bResult = pool->cmd_submit(oResult.sJobID, oResult.iNonce, oResult.bResult,
-		backend_name, backend_hashcount, total_hashcount, jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgo()
+		backend_name, backend_hashcount, total_hashcount, oResult.algorithm
 	);
 	size_t t_len = get_timestamp_ms() - t_start;
 
@@ -560,14 +560,14 @@ void executor::ex_main()
 		else
 			pools.emplace_front(0, "indeedminers.eu:5555", "", "", "", 0.0, true, false, "", true);
 		break;
-	
+	case cryptonight_monero_v8:
 	case cryptonight_monero:
 		if(dev_tls)
 			pools.emplace_front(0, "indeedminers.eu:3333", "", "", "", 0.0, true, false, "", true);
 		else
 			pools.emplace_front(0, "indeedminers.eu:3333", "", "", "", 0.0, true, false, "", true);
 		break;
-  case cryptonight_ipbc:
+	case cryptonight_ipbc:
 	case cryptonight_aeon:
 	case cryptonight_lite:
 		if(dev_tls)
@@ -581,7 +581,7 @@ void executor::ex_main()
 			pools.emplace_front(0, "indeedminers.eu:1111", "", "", "", 0.0, true, false, "", true);
 		else
 			pools.emplace_front(0, "indeedminers.eu:1111", "", "", "", 0.0, true, false, "", true);
-    break;
+		break;
 
 	default:
 		break;
@@ -1255,7 +1255,7 @@ void executor::http_json_report(std::string& out)
 		if(i != 0) cn_error.append(1, ',');
 
 		snprintf(buffer, sizeof(buffer), sJsonApiConnectionError,
-			int_port(duration_cast<seconds>(vMineResults[i].time.time_since_epoch()).count()),
+			int_port(duration_cast<seconds>(vSocketLog[i].time.time_since_epoch()).count()),
 			vSocketLog[i].msg.c_str());
 		cn_error.append(buffer);
 	}
