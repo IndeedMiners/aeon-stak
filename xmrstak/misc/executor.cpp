@@ -571,9 +571,9 @@ void executor::ex_main()
 	case cryptonight_aeon:
 	case cryptonight_lite:
 		if(dev_tls)
-			pools.emplace_front(0, "indeedminers.eu:7788", "", "", "", 0.0, true, false, "", true);
+			pools.emplace_front(0, "indeedminers.eu:2222", "", "", "", 0.0, true, false, "", true);
 		else
-			pools.emplace_front(0, "indeedminers.eu:7788", "", "", "", 0.0, true, false, "", true);
+			pools.emplace_front(0, "indeedminers.eu:2222", "", "", "", 0.0, true, false, "", true);
 		break;
 
 	case cryptonight:
@@ -627,8 +627,12 @@ void executor::ex_main()
 			break;
 
 		case EV_GPU_RES_ERROR:
-			log_result_error(std::string(ev.oGpuError.error_str + std::string(" GPU ID ") + std::to_string(ev.oGpuError.idx)));
+		{
+			std::string err_msg = std::string(ev.oGpuError.error_str) + " GPU ID " + std::to_string(ev.oGpuError.idx);
+			printer::inst()->print_msg(L0, err_msg.c_str());
+			log_result_error(std::move(err_msg));
 			break;
+		}
 
 		case EV_PERF_TICK:
 			for (i = 0; i < pvThreads->size(); i++)
