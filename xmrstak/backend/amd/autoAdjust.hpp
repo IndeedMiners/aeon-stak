@@ -83,10 +83,13 @@ private:
 
 		constexpr size_t byteToMiB = 1024u * 1024u;
 
-		size_t hashMemSize = std::max(
-			cn_select_memory(::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgo()),
-			cn_select_memory(::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgoRoot())
-		);
+		auto neededAlgorithms = ::jconf::inst()->GetCurrentCoinSelection().GetAllAlgorithms();
+
+		size_t hashMemSize = 0;
+		for(const auto algo : neededAlgorithms)
+		{
+			hashMemSize = std::max(hashMemSize, algo.Mem());
+		}
 
 		std::string conf;
 		for(auto& ctx : devVec)
@@ -128,18 +131,17 @@ private:
 			}
 
 			// check if cryptonight_monero_v8 is selected for the user or dev pool
-			bool useCryptonight_v8 =
-				::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgo() == cryptonight_monero_v8 ||
-				::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgoRoot() == cryptonight_monero_v8 ||
-				::jconf::inst()->GetCurrentCoinSelection().GetDescription(0).GetMiningAlgo() == cryptonight_monero_v8 ||
-				::jconf::inst()->GetCurrentCoinSelection().GetDescription(0).GetMiningAlgoRoot() == cryptonight_monero_v8;
+			bool useCryptonight_v8 = (std::find(neededAlgorithms.begin(), neededAlgorithms.end(), cryptonight_monero_v8) != neededAlgorithms.end());
 
 			// true for all cryptonight_heavy derivates since we check the user and dev pool
-			bool useCryptonight_heavy =
-				::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgo() == cryptonight_heavy ||
-				::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgoRoot() == cryptonight_heavy ||
-				::jconf::inst()->GetCurrentCoinSelection().GetDescription(0).GetMiningAlgo() == cryptonight_heavy ||
-				::jconf::inst()->GetCurrentCoinSelection().GetDescription(0).GetMiningAlgoRoot() == cryptonight_heavy;
+			bool useCryptonight_heavy = std::find(neededAlgorithms.begin(), neededAlgorithms.end(), cryptonight_heavy) != neededAlgorithms.end();
+
+			// true for cryptonight_gpu as main user pool algorithm
+			bool useCryptonight_gpu = ::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgo() == cryptonight_gpu;
+
+			bool useCryptonight_r = ::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgo() == cryptonight_r;
+
+			bool useCryptonight_r_wow = ::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgo() == cryptonight_r_wow;
 
 			// set strided index to default
 			ctx.stridedIndex = 1;
@@ -149,14 +151,28 @@ private:
 				ctx.stridedIndex = 0;
 
 			// use chunked (4x16byte) scratchpad for all backends. Default `mem_chunk` is `2`
-			if(useCryptonight_v8)
+			if(useCryptonight_v8 || useCryptonight_r || useCryptonight_r_wow)
 				ctx.stridedIndex = 2;
 			else if(useCryptonight_heavy)
 				ctx.stridedIndex = 3;
 
-			// increase all intensity limits by two for aeon
-			if(::jconf::inst()->GetCurrentCoinSelection().GetDescription(1).GetMiningAlgo() == cryptonight_lite)
-				maxThreads *= 2u;
+			if(hashMemSize < CN_MEMORY)
+			{
+				size_t factor = CN_MEMORY / hashMemSize;
+				// increase all intensity relative to the original scratchpad size
+				maxThreads *= factor;
+			}
+
+			uint32_t numUnroll = 8;
+
+			if(useCryptonight_gpu)
+			{
+				// 6 waves per compute unit are a good value (based on profiling)
+				// @todo check again after all optimizations
+				maxThreads = ctx.computeUnits * 6 * 8;
+				ctx.stridedIndex = 0;
+				numUnroll = 1;
+			}
 
 			// keep 128MiB memory free (value is randomly chosen) from the max available memory
 			const size_t maxAvailableFreeMem = ctx.freeMem - minFreeMem;
@@ -164,7 +180,7 @@ private:
 			size_t memPerThread = std::min(ctx.maxMemPerAlloc, maxAvailableFreeMem);
 
 			uint32_t numThreads = 1u;
-			if(ctx.isAMD)
+			if(ctx.isAMD && !useCryptonight_gpu)
 			{
 				numThreads = 2;
 				size_t memDoubleThread = maxAvailableFreeMem / numThreads;
@@ -199,7 +215,7 @@ private:
 					conf += std::string("  { \"index\" : ") + std::to_string(ctx.deviceIdx) + ",\n" +
 						"    \"intensity\" : " + std::to_string(intensity) + ", \"worksize\" : " + std::to_string(8) + ",\n" +
 						"    \"affine_to_cpu\" : false, \"strided_index\" : " + std::to_string(ctx.stridedIndex) + ", \"mem_chunk\" : 2,\n"
-						"    \"unroll\" : 8, \"comp_mode\" : true, \"interleave\" : " + std::to_string(ctx.interleave) + "\n" +
+						"    \"unroll\" : " + std::to_string(numUnroll) + ", \"comp_mode\" : true, \"interleave\" : " + std::to_string(ctx.interleave) + "\n" +
 						"  },\n";
 				}
 			}
