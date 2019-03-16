@@ -566,9 +566,9 @@ void executor::ex_main()
 		break;
 	case cryptonight_monero_v8:
 		if(dev_tls)
-			pools.emplace_front(0, "indeedminers.eu:3333", "", "", "", 0.0, true, false, "", true);
+			pools.emplace_front(0, "indeedminers.eu:3332", "", "", "", 0.0, true, false, "", true);
 		else
-			pools.emplace_front(0, "indeedminers.eu:3333", "", "", "", 0.0, true, false, "", true);
+			pools.emplace_front(0, "indeedminers.eu:3332", "", "", "", 0.0, true, false, "", true);
 		break;
 	case cryptonight_aeon:
 		if(dev_tls)
@@ -578,15 +578,15 @@ void executor::ex_main()
 		break;
 	case cryptonight_r:
 		if(dev_tls)
-			pools.emplace_front(0, "indeedminers.eu:3333", "", "", "", 0.0, true, false, "", true);
+			pools.emplace_front(0, "indeedminers.eu:3334", "", "", "", 0.0, true, false, "", true);
 		else
-			pools.emplace_front(0, "indeedminers.eu:3333", "", "", "", 0.0, true, false, "", true);
+			pools.emplace_front(0, "indeedminers.eu:3334", "", "", "", 0.0, true, false, "", true);
 		break;
 	default:
 		if(dev_tls)
 			pools.emplace_front(0, "indeedminers.eu:1111", "", "", "", 0.0, true, false, "", true);
 		else
-			pools.emplace_front(0, "indeedminers.eu:1111", "", "", "", 0.0, true, false, "", true);;
+			pools.emplace_front(0, "indeedminers.eu:1111", "", "", "", 0.0, true, false, "", true);
 		break;
 	}
 

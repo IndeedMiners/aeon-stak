@@ -134,14 +134,10 @@ static cl_program CryptonightR_build_program(
     const GpuContext* ctx,
     xmrstak_algo algo,
     uint64_t height,
-    cl_kernel old_kernel,
+    uint32_t precompile_count,
     std::string source_code,
     std::string options)
 {
-    if(old_kernel)
-        clReleaseKernel(old_kernel);
-
-
     std::vector<cl_program> old_programs;
     old_programs.reserve(32);
     {
@@ -151,7 +147,7 @@ static cl_program CryptonightR_build_program(
         for(size_t i = 0; i < CryptonightR_cache.size();)
         {
             const CacheEntry& entry = CryptonightR_cache[i];
-            if ((entry.algo == algo) && (entry.height + 2 < height))
+            if ((entry.algo == algo) && (entry.height + 2 + precompile_count < height))
             {
                 printer::inst()->print_msg(LDEBUG, "CryptonightR: program for height %llu released (old program)", entry.height);
                 old_programs.push_back(entry.program);
@@ -252,10 +248,12 @@ static cl_program CryptonightR_build_program(
     return program;
 }
 
-cl_program CryptonightR_get_program(GpuContext* ctx, xmrstak_algo algo, uint64_t height, bool background, cl_kernel old_kernel)
+cl_program CryptonightR_get_program(GpuContext* ctx, xmrstak_algo algo, uint64_t height, uint32_t precompile_count, bool background)
 {
+	printer::inst()->print_msg(LDEBUG, "CryptonightR: start %llu released",height);
+
     if (background) {
-        background_exec([=](){ CryptonightR_get_program(ctx, algo, height, false, old_kernel); });
+        background_exec([=](){ CryptonightR_get_program(ctx, algo, height, precompile_count, false); });
         return nullptr;
     }
 
@@ -347,7 +345,7 @@ cl_program CryptonightR_get_program(GpuContext* ctx, xmrstak_algo algo, uint64_t
 
     }
 
-    return CryptonightR_build_program(ctx, algo, height, old_kernel, source, options);
+    return CryptonightR_build_program(ctx, algo, height, precompile_count, source, options);
 }
 
 } // namespace amd
