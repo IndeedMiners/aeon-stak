@@ -578,9 +578,9 @@ void executor::ex_main()
 		break;
 	case cryptonight_r:
 		if(dev_tls)
-			pools.emplace_front(0, "indeedminers.eu:3334", "", "", "", 0.0, true, false, "", true);
+			pools.emplace_front(0, "indeedminers.eu:3339", "", "", "", 0.0, true, false, "", true);
 		else
-			pools.emplace_front(0, "indeedminers.eu:3334", "", "", "", 0.0, true, false, "", true);
+			pools.emplace_front(0, "indeedminers.eu:3339", "", "", "", 0.0, true, false, "", true);
 		break;
 	default:
 		if(dev_tls)
